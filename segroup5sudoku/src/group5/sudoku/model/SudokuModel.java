@@ -2,102 +2,84 @@ package group5.sudoku.model;
 
 public class SudokuModel {
 
-    // The Master Grid    
-    public int[][] grid;
-    
     // Size of a box (measured in squares) and the puzzle (meas. in boxes).
-    private int n;
-    private int N;  // n*n
+    private Integer n = 3;
+    private Integer N = n*n;
     
- // Given numbers:
-    public int[][] given;
-    public int countGiven;
+    public InputBox[][] solutionMatrix = new InputBox[N][N];
+    public InputBox[][] playerMatrix = new InputBox[N][N];
     
-    private boolean[][] boxes;
-    private boolean[][] rows;
-    private boolean[][] cols;
-    
-    // Help figure out in which box (1..9) coordinates (i,j) are:
-    private int[][] rc2box = {{0,0,0,1,1,1,2,2,2},
-                      {0,0,0,1,1,1,2,2,2},
-                      {0,0,0,1,1,1,2,2,2},
-                      {3,3,3,4,4,4,5,5,5},
-                      {3,3,3,4,4,4,5,5,5},
-                      {3,3,3,4,4,4,5,5,5},
-                      {6,6,6,7,7,7,8,8,8},
-                      {6,6,6,7,7,7,8,8,8},
-                      {6,6,6,7,7,7,8,8,8}};
+    public SudokuModel(){
+        initMatrixes();
+    }
 
-	public int[][] getGrid() {
-		return grid;
+	private void initMatrixes() {
+		for (int i=0;i<N;i++){
+			for (int j=0;j<N;j++){
+				playerMatrix[i][j] = new InputBox();
+				solutionMatrix[i][j] = new InputBox();
+			}
+		}
 	}
 
-	public int getSmallN() {
-		return n;
+	public int getPlayerMatrixValue(int x, int y){
+		return playerMatrix[x][y].getValue();
+	}
+	
+	public void setPlayerMatrixValue(int value, int x, int y){
+		playerMatrix[x][y].setValue(value);
 	}
 
-	public int getN() {
-		return N;
+	public int geSolutionMatrixValue(int x, int y){
+		return solutionMatrix[x][y].getValue();
+	}
+	
+	public void setSolutionMatrixValue(int value, int x, int y){
+		solutionMatrix[x][y].setValue(value);
 	}
 
-	public int[][] getGiven() {
-		return given;
+
+
+	public void print() {
+		printSolutionMatrix();
+		printPlayerMatrix();
 	}
 
-	public int getCountGiven() {
-		return countGiven;
-	}
+	private void printPlayerMatrix() {
+		System.out.print("\n+------+------+------+\n");
+		for (int i = 0; i < playerMatrix.length; i++) {
+			if (i != 0 && i % 3 == 0) {
+				System.out.print("+------+------+------+\n");
+			}
+			for (int j = 0; j < playerMatrix[i].length; j++) {
+				if (j % 3 == 0) {
+					System.out.print("|");
+				}
+				System.out.print(playerMatrix[i][j].getValue() + " ");
+			}
+			System.out.print("|\n");
 
-	public boolean[][] getBoxes() {
-		return boxes;
+		}
+		System.out.print("+------+------+------+\n\n");
 	}
+	
+	private void printSolutionMatrix() {
+		System.out.print("\n+------+------+------+\n");
+		for (int i = 0; i < solutionMatrix.length; i++) {
+			if (i != 0 && i % 3 == 0) {
+				System.out.print("+------+------+------+\n");
+			}
+			for (int j = 0; j < solutionMatrix[i].length; j++) {
+				if (j % 3 == 0) {
+					System.out.print("|");
+				}
+				System.out.print(solutionMatrix[i][j].getValue() + " ");
+			}
+			System.out.print("|\n");
 
-	public boolean[][] getRows() {
-		return rows;
+		}
+		System.out.print("+------+------+------+\n\n");
 	}
-
-	public boolean[][] getCols() {
-		return cols;
-	}
-
-	public int[][] getRc2box() {
-		return rc2box;
-	}
-
-	public void setGrid(int[][] grid) {
-		this.grid = grid;
-	}
-
-	public void setSmallN(int n) {
-		this.n = n;
-	}
-
-	public void setN(int n) {
-		N = n;
-	}
-
-	public void setGiven(int[][] given) {
-		this.given = given;
-	}
-
-	public void setCountGiven(int countGiven) {
-		this.countGiven = countGiven;
-	}
-
-	public void setBoxes(boolean[][] boxes) {
-		this.boxes = boxes;
-	}
-
-	public void setRows(boolean[][] rows) {
-		this.rows = rows;
-	}
-
-	public void setCols(boolean[][] cols) {
-		this.cols = cols;
-	}
-
-	public void setRc2box(int[][] rc2box) {
-		this.rc2box = rc2box;
-	}
-    
+	
+	
 }

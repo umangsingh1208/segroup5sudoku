@@ -1,5 +1,6 @@
 package group5.sudoku.generator;
 
+import group5.sudoku.model.InputBox;
 import group5.sudoku.model.SudokuModel;
 import group5.sudoku.solver.Solver;
 
@@ -11,50 +12,69 @@ public class Generator {
 
 	public static boolean OPTION_SYMMETRICAL = false;
 	
-	public int difficulty;
-	SudokuModel model;
-    boolean output = true;
-	
-	
-    public Generator(int n, int N) {
-    	model = new SudokuModel();
-    	model.setSmallN(n);
-    	model.setN(N);
-    	model.setGrid(new int[N][N]);
-    	model.setGiven(new int[N][N]);
-    	model.setBoxes(new boolean[N][N]);
-    	model.setCols(new boolean[N][N]);
-    	model.setRows(new boolean[N][N]);
+	   // The Master Grid    
+    private int[][] grid;
+    
+    // Size of a box (measured in squares) and the puzzle (meas. in boxes).
+    private int n = 3;
+    private int N = n*n;  // n*n
+    private int difficulty;
+    
+    private boolean output = true;
+
+    // Given numbers:
+    private int[][] given;
+    private int countGiven;
+    
+    // Available numbers in each box, row and column, used for contructing a valid grid (in function 'create')
+    private boolean[][] boxes;
+    private boolean[][] rows;
+    private boolean[][] cols;
+    
+    // Help figure out in which box (1..9) coordinates (i,j) are:
+    private int[][] rc2box = {{0,0,0,1,1,1,2,2,2},
+                      {0,0,0,1,1,1,2,2,2},
+                      {0,0,0,1,1,1,2,2,2},
+                      {3,3,3,4,4,4,5,5,5},
+                      {3,3,3,4,4,4,5,5,5},
+                      {3,3,3,4,4,4,5,5,5},
+                      {6,6,6,7,7,7,8,8,8},
+                      {6,6,6,7,7,7,8,8,8},
+                      {6,6,6,7,7,7,8,8,8}};
+    
+    
+    public Generator() {
+        this.grid  = new int[N][N];
+        this.given = new int[N][N];
+        this.boxes = new boolean[N][N];
+        this.rows  = new boolean[N][N];
+        this.cols  = new boolean[N][N];
     }
 
-    public SudokuModel getModel(){
-    	return model;
-    }
-    
-    public SudokuModel createSudoku() {
+    public SudokuModel generate() {
 		// Start the timer
         long t = new Date().getTime();
         this.difficulty = 0;
 
         // Fill a grid with numbers:
         this.cleanGrid();
-        this.create(model.getGrid(), model.getBoxes(), model.getRows(), model.getCols(), 0);
+        this.create(this.grid, this.boxes, this.rows, this.cols, 0);
 
 		// Keep track of the best grid we've found:
-		int[][] best = new int[model.getN()][model.getN()];
+		int[][] best = new int[N][N];
 		int bestDifficulty = 0;
-		int bestGiven = model.getN()*model.getN()+1;
+		int bestGiven = N*N+1;
 		int bestTry = 0;
 		
         int tries = 0;
         // Generate 100 puzzles and pick the most difficult one
 		while(tries < 100) {
-			model.setCountGiven(0);
+			countGiven = 0;
 			difficulty = 0;
 			// Clean the given numbers, but keep the grid intact
-	        for(int i=0; i<model.getN(); i++) {
-	            for(int j=0; j<model.getN(); j++) {
-	            	model.getGiven()[i][j] = 0;
+	        for(int i=0; i<N; i++) {
+	            for(int j=0; j<N; j++) {
+	                this.given[i][j] = 0;
 	            }
 	        }
 			
@@ -68,14 +88,14 @@ public class Generator {
 	        	this.addRandomGiven();
 	            difficulty = this.solvable();
 	        }
-	        if(model.getCountGiven() <= bestGiven) {
+	        if(countGiven <= bestGiven) {
 	        	// If this puzzle is better then anything we've found so far, store it
-				bestGiven = model.getCountGiven();
+				bestGiven = countGiven;
 				bestDifficulty = difficulty;
 				bestTry = tries;
-		        for(int i=0; i<model.getN(); i++) {
-		            for(int j=0; j<model.getN(); j++) {
-		                best[i][j] = model.getGiven()[i][j];
+		        for(int i=0; i<N; i++) {
+		            for(int j=0; j<N; j++) {
+		                best[i][j] = this.given[i][j];
 		            }
 		        }
 		        if(bestGiven < 35 && bestDifficulty > 960)
@@ -85,13 +105,13 @@ public class Generator {
 		}
 
 		// Restore the best grid:		
-		model.setCountGiven(bestGiven);
+		countGiven = bestGiven;
 		difficulty = bestDifficulty;
 		if(this.output) 
 			System.out.println("Puzzle "+bestTry+" is best");
-        for(int i=0; i<model.getN(); i++) {
-            for(int j=0; j<model.getN(); j++) {
-            	model.getGiven()[i][j] = best[i][j];
+        for(int i=0; i<N; i++) {
+            for(int j=0; j<N; j++) {
+                this.given[i][j] = best[i][j];
             }
         }
 		
@@ -99,18 +119,13 @@ public class Generator {
 	        long t2 = new Date().getTime();
 	        System.out.println("Puzzle created in "+(t2-t)+" ms,\n"
 	        				 + "with "+difficulty+" difficulty points\n"
-	        				 + "and "+model.getCountGiven()+" given numbers.");
+	        				 + "and "+countGiven+" given numbers.");
 		}
-		
-		return model;
+		return adaptDataToModel();
     }
-    public boolean create(int level) {
-        return create(model.getGrid(), model.getBoxes(), model.getRows(), model.getCols(), level);
-    }
-    
     
     // Fill the grid with numbers, with regards to the rules of the game:
-    public boolean create(int[][] g, boolean[][] b, boolean[][] r, boolean[][] c, int level) {
+    private boolean create(int[][] g, boolean[][] b, boolean[][] r, boolean[][] c, int level) {
         boolean validFound;
         boolean emptySquare = false;
         boolean _b, _r, _c;
@@ -119,22 +134,22 @@ public class Generator {
         int[] kList = permutateList();
         
         // For each row i...
-        for(int i=0; i<model.getN(); i++) {
+        for(int i=0; i<N; i++) {
         	// ... and each column j...
-            for(int j=0; j<model.getN(); j++) {
+            for(int j=0; j<N; j++) {
                 if(g[i][j]==0) {
                     emptySquare = true;
                     validFound = false;
                     
                     // ... and for each value 1-9...
-                    for(int k=0; k<model.getN(); k++) {
-                        _b = b[model.getRc2box()[i][j]][kList[k]];
+                    for(int k=0; k<N; k++) {
+                        _b = b[this.rc2box[i][j]][kList[k]];
                         _r = r[i][kList[k]];
                         _c = c[j][kList[k]];
                         // ...if k is a valid value for grid[i,j]...
                         if(_b && _r && _c) {
                         	// ...fill it in...
-                            b[model.getRc2box()[i][j]][kList[k]] = false;
+                            b[this.rc2box[i][j]][kList[k]] = false;
                             r[i][kList[k]] = false;
                             c[j][kList[k]] = false;
                             g[i][j] = kList[k]+1;
@@ -145,7 +160,7 @@ public class Generator {
                             }
                             
                             g[i][j] = 0;
-                            b[model.getRc2box()[i][j]][kList[k]] = _b;
+                            b[this.rc2box[i][j]][kList[k]] = _b;
                             r[i][kList[k]] = _r;
                             c[j][kList[k]] = _c;
                         }
@@ -158,10 +173,9 @@ public class Generator {
             }
         }
 
-        
         if(!emptySquare) {
             // We're done!
-            model.setGrid(g);
+            this.grid = g;
             return true;
         }
         return false;
@@ -172,54 +186,51 @@ public class Generator {
     // At least 17 numbers need to be shown for any puzzle to be solvable.
     private void randomGiven(int showHowMany) {
         // Erase all given numbers, of previous tries.
-        for(int i=0; i<this.model.getN(); i++) {
-            for(int j=0; j<this.model.getN(); j++) {
-                model.getGiven()[i][j] = 0;
+        for(int i=0; i<this.N; i++) {
+            for(int j=0; j<this.N; j++) {
+                this.given[i][j] = 0;
             }
         }
-        while(model.getCountGiven() < showHowMany)
+        while(countGiven < showHowMany)
         	this.addRandomGiven();
     }
     
     private void addRandomGiven() {
-        int i = (int) (Math.random() * this.model.getN());
-		int j = (int) (Math.random() * this.model.getN());
-    	while(model.getGiven()[i][j] != 0) {
-            i = (int) (Math.random() * this.model.getN());
-			j = (int) (Math.random() * this.model.getN());
+        int i = (int) (Math.random() * this.N);
+		int j = (int) (Math.random() * this.N);
+    	while(this.given[i][j] != 0) {
+            i = (int) (Math.random() * this.N);
+			j = (int) (Math.random() * this.N);
     	}
     	
-    	model.getGiven()[i][j] = model.getGrid()[i][j];
-    	model.setCountGiven(model.getCountGiven()+1);
+    	this.given[i][j] = this.grid[i][j];
+    	countGiven++;
     	
     	if(OPTION_SYMMETRICAL) {
-	    	model.getGiven()[j][model.getN()-i-1] = model.getGrid()[j][model.getN()-i-1];
-	    	model.getGiven()[model.getN()-i-1][model.getN()-j-1] = model.getGrid()[model.getN()-i-1][model.getN()-j-1];
-	    	model.getGiven()[model.getN()-j-1][i] = model.getGrid()[model.getN()-j-1][i];
-	    	model.getGiven()[j][i] = model.getGrid()[j][i];
-	    	model.getGiven()[i][model.getN()-j-1] = model.getGrid()[i][model.getN()-j-1];
-	    	model.getGiven()[model.getN()-i-1][j] = model.getGrid()[model.getN()-i-1][j];
-	    	model.getGiven()[model.getN()-j-1][model.getN()-i-1] = model.getGrid()[model.getN()-j-1][model.getN()-i-1];
-	    	model.setCountGiven(model.getCountGiven()+7);
+	    	this.given[j][N-i-1] = this.grid[j][N-i-1];
+	    	this.given[N-i-1][N-j-1] = this.grid[N-i-1][N-j-1];
+	    	this.given[N-j-1][i] = this.grid[N-j-1][i];
+	    	this.given[j][i] = this.grid[j][i];
+	    	this.given[i][N-j-1] = this.grid[i][N-j-1];
+	    	this.given[N-i-1][j] = this.grid[N-i-1][j];
+	    	this.given[N-j-1][N-i-1] = this.grid[N-j-1][N-i-1];
+	    	this.countGiven += 7;
     	}
     }
     
     // Starts a Solver to check if the generated puzzle is solvable
     private int solvable() {
     	// returns difficulty if puzzle is solvable, or 0 otherwise
-        return new Solver().solve(this.model.getN(), model.getGiven());
+        return new Solver().solve(this.N, this.given);
     }
     
-    // Returns the difficulty level (1...5) based on the difficulty points (roughly 500...1500)
-    public int getDifficultyLevel() {
-    	//    0... 515 = very easy
-    	//  515... 570 = easy
+ // Returns the difficulty level (1...5) based on the difficulty points (roughly 500...1500)
+    private int getDifficultyLevel() {
+    	//    0... 700 = easy
     	//  570... 960 = normal
     	//  960...1200 = hard
     	// 1200...     = very hard
-    	if(this.difficulty<515)
-    		return Difficulty.LEVEL_VERY_EASY;
-    	if(this.difficulty<570)
+    	if(this.difficulty<700)
     		return Difficulty.LEVEL_EASY;
     	if(this.difficulty<960)
     		return Difficulty.LEVEL_NORMAL;
@@ -228,67 +239,60 @@ public class Generator {
 		return Difficulty.LEVEL_VERY_HARD;
     }
 
-	public void setOutput(boolean o) {
+	public void beVerbose(boolean o) {
 		this.output = o;
 	}
 	
+	public SudokuModel generate(int difficulty){
+		SudokuModel result = this.generate();
+		if (output){
+			System.out.println("Generating sudoku");
+		}
+		while (this.getDifficultyLevel()!=difficulty){
+			result = this.generate();
+		}
+		if (output){
+			System.out.println("finished");
+		}
+		return result;
+	}
+	
+	private SudokuModel adaptDataToModel() {
+		SudokuModel model = new SudokuModel();
+		for (int i=0;i<N;i++){
+			for (int j=0;j<N;j++){
+				model.setPlayerMatrixValue(given[i][j], i, j);
+				model.setSolutionMatrixValue(grid[i][j], i, j);
+			}
+		}
+		return model;
+	}
+
 /*** Helper functions ***/
     // Cleans all grids and prepare them for generating a new puzzle
     private void cleanGrid() {
-        for(int i=0; i<model.getN(); i++) {
-            for(int j=0; j<model.getN(); j++) {
-                model.getGrid()[i][j] = 0;
-                model.getBoxes()[i][j] = true;
-                model.getRows()[i][j] = true;
-                model.getCols()[i][j] = true;
-                model.getGiven()[i][j] = 0;
+        for(int i=0; i<N; i++) {
+            for(int j=0; j<N; j++) {
+                this.grid[i][j] = 0;
+                this.boxes[i][j] = true;
+                this.rows[i][j] = true;
+                this.cols[i][j] = true;
+                this.given[i][j] = 0;
             }
         }
     }
     
-    // Creates a random permutation of {1,2,...,model.getN()}
+    // Creates a random permutation of {1,2,...,N}
     private int[] permutateList() {
-        int[] a = new int[model.getN()];
-        for(int i=0; i<model.getN(); i++)
+        int[] a = new int[N];
+        for(int i=0; i<N; i++)
             a[i] = i;
-        for(int i=0; i<model.getN(); i++) {
-            int r = (int) (Math.random() * model.getN());
+        for(int i=0; i<N; i++) {
+            int r = (int) (Math.random() * N);
             int swap = a[r];
             a[r] = a[i];
             a[i] = swap;
         }
         return a;
-    }
-
-/*** Debug functions ***/    
-    public void printGrid() {
-        this.printGrid(model.getGrid());
-    }
-
-    private void printGrid(int[][] g) {
-        if(g == null)
-            System.out.println("Grid == null!");
-            
-        for(int i=0; i<
-            	model.getSmallN(); i++) {
-            System.out.println("+-----+-----+-----+");
-            for(int j=0; j<
-                	model.getSmallN(); j++) {
-                System.out.print("|");
-                for(int k=0; k<
-                    	model.getSmallN(); k++) {
-                    int r = i*
-                        	model.getSmallN()+j;
-                    int c = k*
-                        	model.getSmallN();
-                    System.out.print((g[r][c]  !=0 ? ""+g[r][c]   : ".")
-                                +" "+(g[r][c+1]!=0 ? ""+g[r][c+1] : ".")
-                                +" "+(g[r][c+2]!=0 ? ""+g[r][c+2] : ".")
-                                +"|");
-                }
-                System.out.print("\n");
-            }
-        }
-        System.out.println("+-----+-----+-----+");
     }
 }
