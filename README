@@ -1,0 +1,17 @@
+Sudoku implementation of Team 5 in SE
+
+Implementation responsibilities:
+Diana : 
+Development of GUI. Related classes in class diagram are GUI which is composed of different Swing element as defined in the composite pattern on the upper part of the diagram. Moreover, inner classes which implement Actionlistener classes and their functionality should be developed. Refer to the explanations in the diagram, specification and the solution for MVC exercise 2 in design patterns class.
+
+Umair: 
+Implementation of SudokuController and StrategyContext
+
+Umang: 
+SudokuModel and InputBox
+
+Alex: 
+SudokuGenerator and Policy
+
+Nacer: 
+Development of sudoku solving algorithms. These include interface SolveStrategy and classes RandomStrategy, ExhaustiveSearchStrategy, BacktrackingStrategy . 

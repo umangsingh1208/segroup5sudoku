@@ -49,10 +49,7 @@ public class Solver {
         // and looping any further is useless.
         int count = this.countKnown();
         int countOld = -1;
-        int iter = 0;
         while(count<81 && count!=countOld) {
-            iter++;
-            
             // Method #1
             // Fill in all squares for which there is only 1 candidate left:
             countOld = count;

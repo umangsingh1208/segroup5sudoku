@@ -1,5 +1,7 @@
 package group5.sudoku.model;
 
+import org.apache.log4j.Logger;
+
 public class SudokuModel {
 
     // Size of a box (measured in squares) and the puzzle (meas. in boxes).
@@ -46,6 +48,8 @@ public class SudokuModel {
 	}
 
 	private void printPlayerMatrix() {
+		Logger  logger = Logger.getLogger("sudoku.model");
+		logger.info("Printing player matrix");
 		System.out.print("\n+------+------+------+\n");
 		for (int i = 0; i < playerMatrix.length; i++) {
 			if (i != 0 && i % 3 == 0) {
@@ -64,6 +68,8 @@ public class SudokuModel {
 	}
 	
 	private void printSolutionMatrix() {
+		Logger  logger = Logger.getLogger("sudoku.model");
+		logger.info("Printing solution matrix");
 		System.out.print("\n+------+------+------+\n");
 		for (int i = 0; i < solutionMatrix.length; i++) {
 			if (i != 0 && i % 3 == 0) {
